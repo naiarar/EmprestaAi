@@ -1,66 +1,32 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-from .models import Usuario
-from django.shortcuts import redirect
-from hashlib import sha256
+from django.contrib import messages
+from django.contrib.auth import logout
+from django.contrib.auth.views import LoginView
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
+
+from .forms import CadastroForm, LoginForm
 
 
-def login(request):
-    if request.session.get('usuario'):
-        return redirect('/livro/home')
-    status = request.GET.get('status')
-    return render(request, 'login.html', {'status': status})
+class Login(LoginView):
+    template_name = 'login.html'
+    authentication_form = LoginForm
+    redirect_authenticated_user = True
 
 
 def cadastro(request):
-    if request.session.get('usuario'):
-        return redirect('/livro/home')
-    status = request.GET.get('status')
-    return render(request, 'cadastro.html', {'status': status})
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    form = CadastroForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Cadastro realizado com sucesso. Faça login para continuar.')
+        return redirect('login')
+
+    return render(request, 'cadastro.html', {'form': form})
 
 
-def valida_cadastro(request):
-    nome = request.POST.get('nome')
-    email = request.POST.get('email')
-    senha = request.POST.get('senha')
-
-    usuario = Usuario.objects.filter(email=email)
-
-    if len(nome.strip()) == 0 or len(email.strip()) == 0:
-        return redirect('/auth/cadastro/?status=1')
-
-    if len(senha) < 4:
-        return redirect('/auth/cadastro/?status=2')
-
-    if len(usuario) > 0:
-        return redirect('/auth/cadastro/?status=3')
-
-    try:
-        senha = sha256(senha.encode()).hexdigest()
-        usuario = Usuario(nome=nome, senha=senha, email=email)
-        usuario.save()
-        return redirect('/auth/cadastro/?status=0')
-    except:
-        return redirect('/auth/cadastro/?status=4')
-
-
-def valida_login(request):
-    email = request.POST.get('email')
-    senha = request.POST.get('senha')
-
-    senha = sha256(senha.encode()).hexdigest()
-
-    usuario = Usuario.objects.filter(email=email).filter(senha=senha)
-
-    if len(usuario) == 0:
-        return redirect('/auth/login/?status=1')
-    elif len(usuario) > 0:
-        request.session['usuario'] = usuario[0].id
-        return redirect(f'/livro/home/')
-
-    return HttpResponse(f"{email} {senha}")
-
-
+@require_POST
 def sair(request):
-    request.session.flush()
-    return redirect('/')
+    logout(request)
+    return redirect('index')

@@ -1,7 +1,12 @@
 from django.shortcuts import render
-# from django.http import HttpResponse
+
+from livro.models import Livros
 
 
 def index(request):
-    # return HttpResponse("oi")
-    return render(request, 'index.html', {})
+    livros = Livros.objects.select_related('usuario').order_by('-data_cadastro')[:6]
+    return render(request, 'index.html', {'livros': livros})
+
+
+def about(request):
+    return render(request, 'about.html')

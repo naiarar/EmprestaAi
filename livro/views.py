@@ -1,138 +1,133 @@
-from curses.ascii import HT
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from django.shortcuts import redirect
-from datetime import datetime
-from usuarios.models import Usuario
-from .models import Emprestimo, Livros
+from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
 from .forms import CadastroLivro
+from .models import Emprestimo, Livros
+
+Usuario = get_user_model()
 
 
+def _livro_do_usuario(request, id):
+    return get_object_or_404(Livros, id=id, usuario=request.user)
+
+
+@login_required
 def home(request):
-    if request.session.get('usuario'):
-        usuario = Usuario.objects.get(id=request.session['usuario'])
-        livros = Livros.objects.filter(usuario=usuario)
-        form = CadastroLivro()
-        form.fields['usuario'].initial = request.session['usuario']
-
-        conteudo = {
-            'livros': livros,
-            'usuario_logado': request.session.get('usuario'),
-            'form': form,
-            'usuario': usuario,
-            'status': request.GET.get('status')
-        }
-
-        return render(request, 'home.html', conteudo)
-    else:
-        return redirect('/auth/login/?status=2')
+    livros = Livros.objects.filter(usuario=request.user).select_related('categoria')
+    return render(request, 'home.html', {'livros': livros})
 
 
+@login_required
 def ver_livros(request, id):
-    if request.session.get('usuario'):
-        livros = Livros.objects.get(id=id)
-        form = CadastroLivro()
-
-        usuarios = Usuario.objects.all()
-
-        if request.session.get('usuario') == livros.usuario.id:
-            return render(request, 'ver_livro.html', {'livro': livros,
-                                                      'usuario_logado': request.session.get('usuario'),
-                                                      'form': form,
-                                                      'id_livro': id,
-                                                      'usuarios': usuarios,
-                                                      })
-        else:
-            return HttpResponse('Esse livro não é seu')
-    return redirect('/auth/login/?status=2')
+    livro = _livro_do_usuario(request, id)
+    usuarios = Usuario.objects.filter(is_active=True).exclude(id=request.user.id).order_by('nome')
+    return render(request, 'ver_livro.html', {
+        'livro': livro,
+        'usuarios': usuarios,
+    })
 
 
+@login_required
 def historico_emprestimos(request, id):
-    if request.session.get('usuario'):
-        livros = Livros.objects.get(id=id)
-        emprestimos = Emprestimo.objects.filter(livro=livros)
-        if request.session.get('usuario') == livros.usuario.id:
-
-            return render(request, 'historico_emprestimos.html', {'livro': livros, 'emprestimos': emprestimos})
-        else:
-            return HttpResponse('Esse livro não é seu')
-    return redirect('/auth/login/?status=2')
+    livro = _livro_do_usuario(request, id)
+    emprestimos = livro.emprestimo_set.select_related('nome_emprestado').order_by('-data_emprestimo')
+    return render(request, 'historico_emprestimos.html', {'livro': livro, 'emprestimos': emprestimos})
 
 
+@require_POST
+@login_required
 def cadastrar_livro(request):
-    if request.method == 'POST':
-        form = CadastroLivro(request.POST, request.FILES)
-
-        if form.is_valid:
-            form.save()
-            return redirect('/livro/home')
-        else:
-            return HttpResponse('DADOS INVÁLIDOS')
-
-
-def excluir_livro(request, id):
-    livro = Livros.objects.get(id=id)
-    if livro.usuario.id == request.session['usuario']:
-        livro.delete()
-        return redirect('/livro/home')
-    else:
-        return redirect('auth/sair')
-
-
-def emprestar_livro(request, id):
-    if request.method == 'POST':
-        nome_emprestado = request.POST.get('nome_emprestado')
-        id_livro_emprestado = id
-
-        livro = Livros.objects.get(id=id_livro_emprestado)
-
-    if livro.emprestado == False:
-        emprestimo = Emprestimo(
-            nome_emprestado_id=nome_emprestado,
-            livro_id=id_livro_emprestado)
-
-        emprestimo.save()
-        livro.emprestado = True
+    form = CadastroLivro(request.POST, request.FILES)
+    if form.is_valid():
+        livro = form.save(commit=False)
+        livro.usuario = request.user
         livro.save()
+        messages.success(request, 'Livro cadastrado com sucesso')
+        return redirect('home')
 
-        return redirect('/livro/home/?status=10')
-    else:
+    erros = '; '.join(f'{form.fields[campo].label if campo in form.fields else campo}: {" ".join(msgs)}'
+                      for campo, msgs in form.errors.items())
+    messages.error(request, f'Não foi possível cadastrar o livro. {erros}')
+    return redirect('home')
 
-        return redirect('/livro/home/?status=1')
+
+@require_POST
+@login_required
+def excluir_livro(request, id):
+    livro = _livro_do_usuario(request, id)
+    livro.delete()
+    messages.info(request, 'Livro excluído')
+    return redirect('home')
 
 
+@require_POST
+@login_required
+def emprestar_livro(request, id):
+    livro = _livro_do_usuario(request, id)
+    if livro.emprestado:
+        messages.error(request, 'Desculpe, esse livro já está emprestado')
+        return redirect('home')
+
+    tomador = (
+        Usuario.objects.filter(is_active=True)
+        .exclude(id=request.user.id)
+        .filter(id=request.POST.get('nome_emprestado'))
+        .first()
+    )
+    if tomador is None:
+        messages.error(request, 'Escolha para quem emprestar o livro')
+        return redirect('ver_livros', id=livro.id)
+
+    Emprestimo.objects.create(nome_emprestado=tomador, livro=livro)
+    livro.emprestado = True
+    livro.save(update_fields=['emprestado'])
+    messages.success(request, 'Empréstimo realizado com sucesso')
+    return redirect('home')
+
+
+@require_POST
+@login_required
 def devolver_livro(request, id):
-    livro_devolver = Livros.objects.get(id=id)
-    livro_devolver.emprestado = False
-    livro_devolver.save()
+    livro = _livro_do_usuario(request, id)
+    emprestimo = livro.emprestimo_set.filter(data_devolucao=None).order_by('-data_emprestimo').first()
+    if emprestimo is not None:
+        emprestimo.data_devolucao = timezone.now()
+        emprestimo.save(update_fields=['data_devolucao'])
 
-    devolucao = Emprestimo.objects.filter(
-        livro_id=id, data_devolucao=None).order_by('-data_emprestimo')[0]
-
-    devolucao.data_devolucao = datetime.now()
-    devolucao.save()
-
-    return redirect('/livro/home/?status=11')
+    livro.emprestado = False
+    livro.save(update_fields=['emprestado'])
+    messages.success(request, 'Devolução realizada com sucesso')
+    return redirect('home')
 
 
+@login_required
 def seus_emprestimos(request):
-    usuario = Usuario.objects.get(id=request.session['usuario'])
-    emprestimos = Emprestimo.objects.filter(nome_emprestado=usuario)
+    emprestimos = (
+        Emprestimo.objects.filter(nome_emprestado=request.user)
+        .select_related('livro__usuario')
+        .order_by('-data_emprestimo')
+    )
+    return render(request, 'seus_emprestimos.html', {'emprestimos': emprestimos})
 
-    return render(request, 'seus_emprestimos.html', {'usuario_logado': request.session['usuario'],
-                                                     'emprestimos': emprestimos})
 
-
+@require_POST
+@login_required
 def processa_avaliacao(request):
-    id_emprestimo = request.POST.get('id_emprestimo')
-    opcoes = request.POST.get('opcoes')
-    id_livro = request.POST.get('id_livro')
-
-    emprestimo = Emprestimo.objects.get(id=id_emprestimo)
-    if emprestimo.livro.usuario.id == request.session['usuario']:
-        emprestimo.avaliacao = opcoes
-        emprestimo.save()
-        print(id_livro)
-        return redirect(f'/livro/ver_livro/{emprestimo.livro_id}')
+    emprestimo = get_object_or_404(
+        Emprestimo,
+        id=request.POST.get('id_emprestimo'),
+        livro__usuario=request.user,
+        data_devolucao__isnull=False,
+    )
+    opcao = request.POST.get('opcoes')
+    if opcao in dict(Emprestimo.choices):
+        emprestimo.avaliacao = opcao
+        emprestimo.save(update_fields=['avaliacao'])
+        messages.success(request, 'Avaliação registrada')
     else:
-        return HttpResponse('não')
+        messages.error(request, 'Avaliação inválida')
+    return redirect('historico_emprestimos', id=emprestimo.livro_id)

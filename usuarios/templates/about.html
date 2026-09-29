@@ -1,9 +1,16 @@
-{% extends 'base.html' %} 
-{% block 'titulo'%} Sobre {% endblock %} 
-{% block 'conteudo'%}
+{% extends 'base.html' %}
+{% block 'titulo' %}Sobre{% endblock %}
+{% block 'conteudo' %}
 
-<div class="container">
-<h1>Sobre</h1>
+<div class="container py-4">
+  <h1>Sobre o Empresta</h1>
+  <p class="lead">Uma biblioteca compartilhada entre amigos.</p>
+  <p>
+    Cada pessoa cadastra os livros que tem em casa, empresta para quem também usa o sistema,
+    registra a devolução e avalia como foi o empréstimo. Assim fica fácil saber onde está cada livro
+    e com quem vale a pena compartilhar.
+  </p>
+  <a href="{% url 'cadastro' %}" class="btn btn-info">Criar conta</a>
 </div>
 
 {% endblock %}

@@ -1,138 +1,80 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
     <title>emprestaí</title>
-    <link rel="stylesheet" href="/css/style.css">
-
+    <link rel="stylesheet" href="{% static 'style.css' %}">
 </head>
 
 <body>
     <header>
-
         <nav>
-            <img src="/media/logo.png">
             <p class="brand">emprest<strong>aí</strong></p>
             <ul>
-                <li><a href="/index/templates/about.html">About</a></li>
+                <li><a href="{% url 'about' %}">Sobre</a></li>
+                {% if user.is_authenticated %}
+                <li><a href="{% url 'home' %}">Minha biblioteca</a></li>
+                {% else %}
                 <li><a href="{% url 'cadastro' %}">Cadastro</a></li>
                 <li><a href="{% url 'login' %}">Login</a></li>
-
+                {% endif %}
             </ul>
         </nav>
     </header>
     <main>
-
         <div class="content">
             <div class="header-block">
                 <div class="text">
                     <h2>Uma rede social para pessoas apaixonadas por livros</h2>
-                    
-                    <div style="display: flex; align-items: center; justify-content: space-around;">
-                        <div>
-
-                            <p style="margin-bottom: 32px;">
-                                Bora compartilhar essa paixão
-                            </p>
-                            <p>
-                                Como resistir aquele cheirinho de livro?
-                                Se você assim como nós não consegue resistir
-    
-                            </p>
-                        </div>
-                        <img style="max-height: 200px;" src="/media/biblioteca.png" alt="">
-                    </div>
+                    <p style="margin-bottom: 32px;">Bora compartilhar essa paixão</p>
+                    <p>
+                        Como resistir àquele cheirinho de livro? Cadastre os livros da sua estante,
+                        empreste para os amigos e acompanhe quem está com cada um.
+                    </p>
                 </div>
-                <img id="tag" src="/media/tag.png">
             </div>
-     
-
         </div>
+
         <section class="catalog" id="catalog">
             <div class="title-wrapper-catalog">
-                <p>Digite livro que você procura</p>
-                <h3>Catalogo</h3>
-            </div>
-            <div class="filter-card">
-                <input type="text" class="search-input" placeholder="Escolha seu livro favorito" />
-                <button class="search-button">Buscar</button>
+                <p>Últimos livros cadastrados</p>
+                <h3>Catálogo</h3>
             </div>
             <div class="card-wrapper">
+                {% for livro in livros %}
                 <div class="card-item">
-                    <img src="/media/faca amor.jpg" alt="Book">
+                    {% if livro.image %}
+                    <img src="{{ livro.image.url }}" alt="Capa de {{ livro.titulo }}">
+                    {% endif %}
                     <div class="card-content">
-                        <h3>Faça amor, não faça jogo</h3>
+                        <h3>{{ livro.titulo }}</h3>
                     </div>
-                    <p> Um livro de Ique Carvalho</p>
-                    <button type="button">Quero emprestar esse livro!</button>
-
+                    <p>Um livro de {{ livro.autor }}</p>
+                    <p>Na estante de {{ livro.usuario.nome }}</p>
                 </div>
-                <div class="card-item">
-                    <img src="/media/faca amor.jpg" alt="Book">
-                    <div class="card-content">
-                        <h3>Faça amor, não faça jogo</h3>
-                    </div>
-                    <p> Um livro de Ique Carvalho</p>
-                    <button type="button">Quero emprestar esse livro!</button>
-
-                </div>
-                <div class="card-item">
-                    <img src="/media/faca amor.jpg" alt="Book">
-                    <div class="card-content">
-                        <h3>Faça amor, não faça jogo</h3>
-                    </div>
-                    <p> Um livro de Ique Carvalho</p>
-                    <button type="button">Quero emprestar esse livro!</button>
-
-                </div>
-                <div class="card-item">
-                    <img src="/media/faca amor.jpg" alt="Book">
-                    <div class="card-content">
-                        <h3>Faça amor, não faça jogo</h3>
-                    </div>
-                    <p> Um livro de Ique Carvalho</p>
-                    <button type="button">Quero emprestar esse livro!</button>
-
-                </div>
-                <div class="card-item">
-                    <img src="/media/faca amor.jpg" alt="Book">
-                    <div class="card-content">
-                        <h3>Faça amor, não faça jogo</h3>
-                    </div>
-                    <p> Um livro de Ique Carvalho</p>
-                    <button type="button">Quero emprestar esse livro!</button>
-
-                </div>
-                <div class="card-item">
-                    <img src="/media/faca amor.jpg" alt="Book">
-                    <div class="card-content">
-                        <h3>Faça amor, não faça jogo</h3>
-                    </div>
-                    <p> Um livro de Ique Carvalho</p>
-                    <button type="button">Quero emprestar esse livro!</button>
-
-                </div>
+                {% empty %}
+                <p>Nenhum livro cadastrado ainda. <a href="{% url 'cadastro' %}">Crie sua conta</a> e seja a primeira pessoa a compartilhar!</p>
+                {% endfor %}
             </div>
-
         </section>
+
         <section class="about" id="about">
             <div class="content">
                 <div class="titlw-wrapper-about">
-                    <p>Know about us</p>
-                    <h3>About</h3>
+                    <p>Conheça o projeto</p>
+                    <h3>Sobre</h3>
                 </div>
                 <div class="about-content">
-                    <div class="left">
-                        <div class="img" src="/media/biblioteca.png"></div>
-                    </div>
                     <div class="right">
-                        <h3>Join tecnology and mobility</h3>
-                        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Illo autem aut nihil. Quibusdam hic
-                            adipisci consectetur! Voluptatem fuga obcaecati sit, excepturi hic fugiat itaque laboriosam
-                            quaerat dolorum et? Id, temporibus!</p>
+                        <h3>Sua estante, compartilhada</h3>
+                        <p>
+                            O emprestaí organiza os empréstimos de livros entre amigos: quem pegou,
+                            quando pegou, quando devolveu e como foi a experiência.
+                        </p>
                     </div>
                 </div>
             </div>

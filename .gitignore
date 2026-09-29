@@ -137,3 +137,5 @@ GitHub.sublime-settings
 .history
 
 generate_secret_key.py
+staticfiles/
+.DS_Store

@@ -1,86 +1,43 @@
 {% extends 'base.html' %}
 
+{% block 'titulo' %}Meus livros{% endblock %}
 
 {% block 'conteudo' %}
 
 <div class="container">
-    {% if status == '1' %}
-    <div class="alert alert-danger" role="alert">
-        Desculpe, esse livro já está emprestado
-    </div>
-    {% endif %}
-    {% if status == '10' %}
-    <div class="alert alert-success" role="alert">
-        Emprestimo realizado com sucesso
-    </div>
-    {% endif %}
-
-    {% if status == '11' %}
-    <div class="alert alert-primary" role="alert">
-        Devolução realizada com sucesso
-    </div>
-    {% endif %}
-
     <div class="row pt-3">
-        <div class="col">
-
-            <h2>Biblioteca de {{usuario.nome}}</h2> 
-
-
-
+        <div class="col d-flex justify-content-between align-items-center">
+            <h2>Biblioteca de {{ user.nome }}</h2>
+            <button class="btn btn-success" type="button" data-toggle="modal" data-target="#modalCadastroLivro">Cadastrar livro</button>
         </div>
     </div>
+
     <div class="row pt-3">
         {% for livro in livros %}
-        <div class="col-md">
-            <div class="card" style="width: 18rem;">
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card h-100">
+                {% if livro.image %}
+                <img class="card-img-top" src="{{ livro.image.url }}" alt="Capa de {{ livro.titulo }}" style="aspect-ratio: 2 / 3; object-fit: cover;">
+                {% endif %}
                 <div class="card-body">
-                    <img width="100%" src="{{livro.image.url}}" >
-                    <h3 class="card-title mb-0 ">{{livro.titulo}}</h3>
-                    <p class="card-text mb-1 small">{{livro.autor}}</p>
-                    <dl>
-                        <!-- <dt>Categoria</dt><dd>{{livro.categoria}}</dd> -->
-                    </dl>
+                    <h3 class="card-title h5 mb-0">{{ livro.titulo }}</h3>
+                    <p class="card-text mb-1 small">{{ livro.autor }} · {{ livro.categoria }}</p>
                     {% if livro.emprestado %}
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        Disponível
-                        <svg class="d-inline" style="color : red;" xmlns="http://www.w3.org/2000/svg" width="24"
-                            height="24" fill="currentColor" class="bi bi-journal-x" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd"
-                                d="M6.146 6.146a.5.5 0 0 1 .708 0L8 7.293l1.146-1.147a.5.5 0 1 1 .708.708L8.707 8l1.147 1.146a.5.5 0 0 1-.708.708L8 8.707 6.854 9.854a.5.5 0 0 1-.708-.708L7.293 8 6.146 6.854a.5.5 0 0 1 0-.708z" />
-                            <path
-                                d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2z" />
-                            <path
-                                d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1z" />
-                        </svg>
-                    </h6>
+                    <span class="badge badge-danger">Emprestado</span>
                     {% else %}
-                    <h6 class="card-subtitle mb-2 text-muted">
-                        Disponível
-                        <svg style=" display: inline; color : green;" xmlns="http://www.w3.org/2000/svg" width="24"
-                            height="24" fill="currentColor" class="bi bi-journal-check" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd"
-                                d="M10.854 6.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 8.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
-                            <path
-                                d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2z" />
-                            <path
-                                d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1H1z" />
-                        </svg>
-                    </h6>
+                    <span class="badge badge-success">Disponível</span>
                     {% endif %}
-
-                    <a href="{% url 'ver_livros' livro.id %}" class="bnt bnt-info">Acessar livro</a>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <a href="{% url 'ver_livros' livro.id %}" class="btn btn-info btn-sm">Acessar livro</a>
                 </div>
             </div>
-
         </div>
-
-
-
-
+        {% empty %}
+        <div class="col">
+            <p class="text-muted">Você ainda não cadastrou nenhum livro. Use o botão "Cadastrar livro" para começar.</p>
+        </div>
         {% endfor %}
-
-
     </div>
 </div>
 {% endblock %}

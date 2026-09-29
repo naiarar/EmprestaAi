@@ -1,0 +1,13 @@
+{% if form.non_field_errors %}
+<div class="alert alert-danger" role="alert">
+  {% for erro in form.non_field_errors %}{{ erro }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+</div>
+{% endif %}
+{% for campo in form %}
+<div class="form-group">
+  <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+  {{ campo }}
+  {% if campo.help_text %}<small class="form-text text-muted">{{ campo.help_text|safe }}</small>{% endif %}
+  {% for erro in campo.errors %}<div class="invalid-feedback d-block">{{ erro }}</div>{% endfor %}
+</div>
+{% endfor %}

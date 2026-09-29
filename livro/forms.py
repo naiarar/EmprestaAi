@@ -1,16 +1,15 @@
 from django import forms
-from django.db.models import fields
+
+from usuarios.forms import BootstrapMixin
+
 from .models import Livros
 
 
-class CadastroLivro(forms.ModelForm):
-    class Meta: 
+class CadastroLivro(BootstrapMixin, forms.ModelForm):
+    class Meta:
         model = Livros
-        fields = "__all__"
+        exclude = ('usuario', 'emprestado', 'data_cadastro')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['usuario'].widget = forms.HiddenInput()
-
-
-
+        self.fields['categoria'].empty_label = 'Selecione uma categoria'
