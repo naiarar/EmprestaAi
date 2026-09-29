@@ -1,4 +1,4 @@
-# Empresta 📚
+# EmprestaAi 📚
 
 Sistema de **biblioteca compartilhada**: cada usuário cadastra seus livros, empresta para outras pessoas, registra a devolução e avalia como foi o empréstimo.
 
